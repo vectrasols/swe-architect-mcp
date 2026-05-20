@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "se-lifecycle-mcp"
+version = "0.1.0"
+description = "SDLC-guided MCP server that turns one-line product ideas into lifecycle-driven software builds."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "SE Lifecycle MCP Contributors" }]
+dependencies = [
+    "mcp>=1.0.0",
+    "python-dotenv>=1.0.0",
+]
+
+[project.optional-dependencies]
+anthropic = ["anthropic>=0.30.0"]
+openai = ["openai>=1.30.0"]
+google = ["google-genai>=0.1.0"]
+all = [
+    "anthropic>=0.30.0",
+    "openai>=1.30.0",
+    "google-genai>=0.1.0",
+]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+    "ruff>=0.3.0",
+    "mypy>=1.9.0",
+]
+
+[project.scripts]
+se-lifecycle-mcp = "se_lifecycle_mcp.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["se_lifecycle_mcp*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
