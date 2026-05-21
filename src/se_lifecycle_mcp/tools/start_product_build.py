@@ -16,9 +16,16 @@ from se_lifecycle_mcp.workspace import (
 
 
 DEFAULT_QUESTIONS = [
-    "Who are the primary users and what jobs do they need to complete?",
-    "What is the smallest useful MVP you would accept as successful?",
-    "Are there security, privacy, scale, budget, or technology constraints?",
+    "Who are the primary users and what is the single most important job "
+    "each user needs to complete?",
+    "What is the ONE workflow that must work for this to be useful? "
+    "(Tracer Bullet — the thinnest end-to-end slice)",
+    "What can be EXPLICITLY left out of the first version? (YAGNI)",
+    "Are there any technology, security, budget, platform, or compliance "
+    "constraints?",
+    "FEASIBILITY CHECK: Is this technically feasible with available technology? "
+    "Is it financially justified? Will users actually adopt it?",
+    "How will you measure success? What does 'done' look like for v1?",
 ]
 
 
@@ -114,12 +121,38 @@ async def run(
     llm: LLMProvider | None,
 ) -> str:
     """Start a product build and optionally create its lifecycle workspace."""
+    # ── Input validation (robustness for different users) ───────────────
+    if not idea or not idea.strip():
+        return """# Product Build Blocked
+
+Status: `blocked`
+
+**Error**: `idea` is required. Please describe what you want to build.
+
+Example: `start_product_build(idea="A task management app with Kanban boards")`
+"""
+
+    if not workspace_root or not workspace_root.strip():
+        return """# Product Build Blocked
+
+Status: `blocked`
+
+**Error**: `workspace_root` is required. This should be the path to the \
+directory where your project files will be stored.
+"""
+
+    idea = idea.strip()
+    workspace_root = workspace_root.strip()
+    target_users = (target_users or "").strip()
+    constraints = (constraints or "").strip()
+
     project_id = new_project_id(idea)
     state = ProjectState(
         project_id=project_id,
         idea=idea,
         workspace_root=workspace_root,
         phase="communication",
+        sub_step="interview",
         status="needs_user_input",
         target_users=target_users,
         constraints=constraints,

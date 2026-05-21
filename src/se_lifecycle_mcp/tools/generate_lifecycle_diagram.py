@@ -17,6 +17,10 @@ SUPPORTED_DIAGRAMS = {
     "state",
     "deployment",
     "roadmap",
+    "use_case",
+    "activity",
+    "class",
+    "component",
 }
 
 
@@ -111,6 +115,93 @@ def _fallback_diagram(diagram_type: str, source_artifact: str) -> str:
     Runtime --> Storage[(Storage)]
     Runtime --> Logs[Logs / Diagnostics]
 """
+    if diagram_type == "use_case":
+        return """flowchart LR
+    subgraph Actors
+        PrimaryUser((Primary User))
+        Admin((Admin))
+    end
+    subgraph System
+        UC1[Create Record]
+        UC2[View Records]
+        UC3[Update Record]
+        UC4[Delete Record]
+        UC5[Manage Settings]
+    end
+    PrimaryUser --> UC1
+    PrimaryUser --> UC2
+    PrimaryUser --> UC3
+    Admin --> UC4
+    Admin --> UC5
+"""
+    if diagram_type == "activity":
+        return """flowchart TD
+    Start([Start]) --> Input[User provides input]
+    Input --> Validate{Valid input?}
+    Validate -->|Yes| Process[Process request]
+    Validate -->|No| Error[Show error message]
+    Error --> Input
+    Process --> Save[Save to storage]
+    Save --> Success{Save successful?}
+    Success -->|Yes| Result[Return success]
+    Success -->|No| Retry[Retry or report failure]
+    Retry --> Process
+    Result --> End([End])
+"""
+    if diagram_type == "class":
+        return """classDiagram
+    class DomainEntity {
+        +String id
+        +String name
+        +String status
+        +create()
+        +update()
+        +validate()
+    }
+    class Repository {
+        <<interface>>
+        +save(entity)
+        +findById(id)
+        +findAll()
+        +delete(id)
+    }
+    class ApplicationService {
+        -Repository repository
+        +execute(command)
+        +query(criteria)
+    }
+    ApplicationService --> Repository : uses
+    Repository ..> DomainEntity : manages
+"""
+    if diagram_type == "component":
+        return """flowchart TB
+    subgraph Presentation
+        UI[User Interface]
+    end
+    subgraph Application
+        SVC[Application Services]
+        CMD[Command Handlers]
+        QRY[Query Handlers]
+    end
+    subgraph Domain
+        ENT[Domain Entities]
+        RULES[Business Rules]
+    end
+    subgraph Infrastructure
+        REPO[Repository Adapters]
+        DB[(Database)]
+        EXT[External APIs]
+    end
+    UI --> SVC
+    SVC --> CMD
+    SVC --> QRY
+    CMD --> ENT
+    CMD --> RULES
+    QRY --> REPO
+    CMD --> REPO
+    REPO --> DB
+    REPO --> EXT
+"""
     return """timeline
     title Product Roadmap
     MVP : Requirements : Design : Core workflow : Tests
@@ -126,9 +217,13 @@ def _is_likely_mermaid(diagram_type: str, text: str) -> bool:
         "flow": ("flowchart", "graph"),
         "architecture": ("flowchart", "graph"),
         "deployment": ("flowchart", "graph"),
+        "use_case": ("flowchart", "graph"),
+        "activity": ("flowchart", "graph"),
+        "component": ("flowchart", "graph"),
         "erd": ("erDiagram",),
         "sequence": ("sequenceDiagram",),
         "state": ("stateDiagram", "stateDiagram-v2"),
+        "class": ("classDiagram",),
         "roadmap": ("timeline", "gantt", "flowchart"),
     }
     return stripped.startswith(starters.get(diagram_type, ("flowchart",)))
@@ -181,9 +276,21 @@ Status: `blocked`
 """
         record = save_diagram(state, normalized, mermaid)
         save_state(state)
-        persistence = f"Diagram written to `{record.path}`."
+        persistence = f"Mermaid source written to `{record.path}`."
+        if record.image_path:
+            persistence += f"\nRendered image saved to `{record.image_path}`."
     else:
         persistence = "Workspace write was not allowed, so the diagram was returned only."
+        record = None
+
+    # Build viewable links
+    from se_lifecycle_mcp.diagram_renderer import (
+        get_mermaid_ink_url,
+        get_mermaid_live_url,
+    )
+
+    image_url = record.image_url if record else get_mermaid_ink_url(mermaid)
+    editor_url = record.editor_url if record else get_mermaid_live_url(mermaid)
 
     return f"""# Lifecycle Diagram
 
@@ -192,7 +299,15 @@ Diagram type: `{normalized}`
 
 {persistence}
 
+## 🔗 View Diagram
+
+- **View rendered diagram**: [Open in browser]({image_url})
+- **Edit interactively**: [Open in Mermaid Live Editor]({editor_url})
+
+## Mermaid Source
+
 ```mermaid
 {mermaid}
 ```
 """
+

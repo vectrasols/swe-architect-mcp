@@ -41,3 +41,8 @@ include = ["se_lifecycle_mcp*"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
+
+[tool.uv.workspace]
+members = [
+    "Test Project 1",
+]

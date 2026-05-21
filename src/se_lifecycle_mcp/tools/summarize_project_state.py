@@ -76,6 +76,7 @@ Status: `blocked`
 Project id: `{state.project_id}`
 Idea: {state.idea}
 Current phase: `{state.phase}`
+Sub-step: `{state.sub_step}`
 Status: `{state.status}`
 Updated: {state.updated_at}
 

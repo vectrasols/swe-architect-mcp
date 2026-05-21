@@ -8,6 +8,7 @@ from se_lifecycle_mcp.llm.base import LLMProvider
 from se_lifecycle_mcp.models import (
     DecisionRecord,
     LifecyclePhase,
+    PHASES,
     ProjectState,
     TraceabilityRecord,
     is_valid_phase,
@@ -37,6 +38,116 @@ PHASE_TITLES: dict[LifecyclePhase, str] = {
     "deployment": "Deployment And Handoff",
 }
 
+# Phase-specific interview questions — asked BEFORE generating the artifact.
+# Derived from Sommerville SE 9th Ed, Pressman, and the 7 SE books.
+# These ensure every universally-verified SDLC activity is covered.
+PHASE_INTERVIEW_QUESTIONS: dict[LifecyclePhase, list[str]] = {
+    # ── Communication (Sommerville: Inception + Feasibility Study) ─────────
+    "communication": [
+        "Who are the primary users and what is the single most important job "
+        "each user needs to complete?",
+        "What is the ONE workflow that must work for this product to be useful? "
+        "(Tracer Bullet — the thinnest end-to-end slice)",
+        "What can be EXPLICITLY left out of the first version? "
+        "(Scope control — YAGNI)",
+        "Are there any technology, security, budget, platform, or compliance "
+        "constraints?",
+        "FEASIBILITY CHECK (Sommerville Ch.2): Is this idea technically feasible "
+        "with available technology? Is it financially justified? Will users "
+        "actually adopt it?",
+        "How will you measure success? What does 'done' look like for v1?",
+    ],
+    # ── Requirements (Sommerville: Elicitation → Specification → Validation) ─
+    "requirements": [
+        "FUNCTIONAL: What are ALL the things the system must DO? "
+        "(list each action the user or system performs)",
+        "NON-FUNCTIONAL (Sommerville Ch.4): What qualities must the system HAVE? "
+        "- Product: performance, reliability, usability, efficiency? "
+        "- Organizational: development standards, delivery timeline? "
+        "- External: regulatory, legal, ethical, interoperability?",
+        "DOMAIN: Are there any business rules specific to this domain that a "
+        "developer might not know about?",
+        "INVERSE: What must the system NEVER do? (security, safety, data loss)",
+        "ACCEPTANCE CRITERIA: For each major feature, how would you verify it "
+        "works? What is the pass/fail test?",
+        "CONSTRAINTS: Any mandated technology, database, platform, or "
+        "integration requirements?",
+    ],
+    # ── Modeling (Sommerville Ch.5: 4 perspectives, 5 UML diagrams) ──────
+    "modeling": [
+        "INTERACTIONS: Which requirements involve the most complex user "
+        "interaction or branching workflows?",
+        "DATA ENTITIES: What are the main data objects? How do they relate to "
+        "each other? (e.g., User has many Orders, Order has many Items)",
+        "BEHAVIOR: Are there objects with a lifecycle? (e.g., Order: "
+        "created→confirmed→shipped→delivered→cancelled)",
+        "EXTERNAL BOUNDARIES: Which parts of the system interact with external "
+        "services, APIs, or third-party systems?",
+        "MAIN WORKFLOW: Can you walk through the primary workflow step by step, "
+        "including what happens when something goes wrong?",
+    ],
+    # ── Design (Sommerville Ch.6: 4 design activities, 9 questions) ──────
+    "design": [
+        "ARCHITECTURE: Do you have preferences for the overall architecture "
+        "style? (layered, microservices, monolith, serverless, etc.)",
+        "COMPONENT DESIGN: How should we split the system into modules? Any "
+        "technology preferences for frontend, backend, or database?",
+        "INTERFACE DESIGN: What are the key interfaces between components? "
+        "(APIs, event buses, shared databases, message queues)",
+        "DATABASE DESIGN: What data must be persisted? SQL, NoSQL, files, "
+        "or a mix? Any performance requirements for data access?",
+        "ERROR HANDLING: How should the system handle errors — retry, fail "
+        "fast, degrade gracefully, or notify the user?",
+        "CHANGE TOLERANCE: What parts of the system are most likely to change "
+        "in the future? (so we can hide them behind interfaces)",
+    ],
+    # ── Planning (Sommerville Ch.22-23: Risk mgmt, project planning) ─────
+    "planning": [
+        "PRIORITY: What is the order of features you want built? "
+        "What is the minimum viable first delivery?",
+        "TIMELINE: Are there any hard deadlines or time constraints?",
+        "TEAM: Are you building this alone or with a team? "
+        "What skills are available?",
+        "RISK (Sommerville Ch.22): What could go wrong? Any known technical "
+        "risks (unfamiliar technology, complex integration, performance)?",
+        "TRADEOFFS: What is more important — speed of delivery, code quality, "
+        "completeness, or learning?",
+    ],
+    # ── Construction (Clean Code + Code Complete) ────────────────────────
+    "construction": [
+        "Which task from the approved plan are you implementing now?",
+        "Did the implementation follow the approved design for this component?",
+        "Are there any deviations from the plan? If so, what is the rationale?",
+        "Have you run the existing tests after your changes? Any failures?",
+        "Are there any unplanned features that crept in? (scope creep check)",
+    ],
+    # ── Testing (Sommerville Ch.8: 3 stages + V&V) ──────────────────────
+    "testing": [
+        "CRITICAL REQUIREMENTS: Which requirements are the most important to "
+        "test? (must-have features that CANNOT fail)",
+        "EDGE CASES: Are there boundary conditions or error scenarios you are "
+        "worried about? (empty input, max values, concurrent access, etc.)",
+        "FRAMEWORK: What testing framework do you prefer? "
+        "(pytest, jest, junit, etc.)",
+        "EXISTING TESTS: Do you have any existing tests we should incorporate?",
+        "ACCEPTANCE: How will you validate that the system meets YOUR "
+        "expectations? (Sommerville V&V: building the RIGHT product)",
+    ],
+    # ── Deployment (Sommerville: RUP Transition + Evolution) ─────────────
+    "deployment": [
+        "ENVIRONMENT: Where should the final product run? "
+        "(local, server, cloud, container, mobile, desktop)",
+        "CONFIGURATION: What environment variables, secrets, or external "
+        "services are needed to run?",
+        "CONSTRAINTS: Are there any deployment constraints? "
+        "(specific OS, hosting provider, CI/CD pipeline, domain)",
+        "MAINTENANCE (Sommerville Ch.9): Who will maintain this after handoff? "
+        "How will bugs be reported and fixed?",
+        "EVOLUTION: What features should be built in the next iteration? "
+        "Any known limitations to document?",
+    ],
+}
+
 
 def _build_user_message(
     *,
@@ -50,18 +161,42 @@ def _build_user_message(
         "project_id": state.project_id,
         "idea": state.idea,
         "current_phase": state.phase,
+        "sub_step": state.sub_step,
         "target_phase": target_phase,
         "target_users": state.target_users,
         "constraints": state.constraints,
         "assumptions": state.assumptions,
         "pending_questions": state.pending_questions,
+        "interview_answers": state.phase_interview_answers.get(target_phase, []),
         "known_artifacts": sorted(state.artifacts.keys()),
         "known_diagrams": sorted(state.diagrams.keys()),
         "allow_diagrams": allow_diagrams,
     }
+
+    sub_step_instruction = ""
+    if state.sub_step == "interview":
+        sub_step_instruction = (
+            "\n\nIMPORTANT: The user has NOT yet answered all phase questions. "
+            "Generate a QUESTION LIST for this phase, not the full artifact. "
+            "Ask 3-5 focused questions specific to this phase."
+        )
+    elif state.sub_step == "draft":
+        sub_step_instruction = (
+            "\n\nThe user has answered the interview questions (see interview_answers). "
+            "Generate a DRAFT artifact based on their answers. Mark it as DRAFT "
+            "and ask the user to review before finalizing."
+        )
+    elif state.sub_step == "review":
+        sub_step_instruction = (
+            "\n\nThe user has reviewed the draft and provided feedback. "
+            "Apply their feedback and generate the FINALIZED artifact."
+        )
+
     return (
         f"Target phase: {target_phase}\n"
-        f"User response or new context:\n{user_response or 'No new user response.'}\n\n"
+        f"Sub-step: {state.sub_step}\n"
+        f"User response or new context:\n{user_response or 'No new user response.'}\n"
+        f"{sub_step_instruction}\n\n"
         f"Current project state:\n{json.dumps(compact_state, indent=2)}"
     )
 
@@ -399,7 +534,54 @@ async def run(
     allow_diagrams: bool = True,
     llm: LLMProvider | None,
 ) -> str:
-    """Advance a lifecycle project by one controlled phase."""
+    """Advance a lifecycle project by one controlled phase or sub-step.
+
+    Sub-step flow within each phase:
+        interview → draft → review → finalize
+
+    The tool will NOT generate the full artifact until the user has
+    answered the interview questions.
+    """
+    # ── Input validation (robustness for different users) ───────────────
+    if not project_id or not project_id.strip():
+        return """# Lifecycle Advance Blocked
+
+Status: `blocked`
+
+**Error**: `project_id` is required. Please provide the project ID returned by \
+`start_product_build`.
+
+If you haven't started a project yet, call `start_product_build` first.
+"""
+
+    if not workspace_root or not workspace_root.strip():
+        return """# Lifecycle Advance Blocked
+
+Status: `blocked`
+
+**Error**: `workspace_root` is required. This should be the path to the \
+directory where your project files are stored.
+"""
+
+    project_id = project_id.strip()
+    workspace_root = workspace_root.strip()
+    user_response = (user_response or "").strip()
+    phase_override = (phase_override or "").strip()
+
+    # Validate phase_override if provided
+    if phase_override and phase_override not in PHASES:
+        valid_phases = ", ".join(f"`{p}`" for p in PHASES)
+        return f"""# Lifecycle Advance Blocked
+
+Status: `blocked`
+
+**Error**: `{phase_override}` is not a valid phase.
+
+Valid phases: {valid_phases}
+
+Current phases are aligned with Sommerville and Pressman SDLC models.
+"""
+
     try:
         state = load_state(workspace_root, project_id)
     except WorkspaceError as exc:
@@ -423,6 +605,68 @@ Status: `blocked`
 Current phase: `{state.phase}`
 """
 
+    # ── Sub-step state machine ──────────────────────────────────────────
+    # If we're entering a NEW phase (not continuing), start at interview
+    if target_phase != state.phase:
+        state.sub_step = "interview"
+
+    # Determine what to do based on current sub-step
+    current_sub_step = state.sub_step
+
+    # INTERVIEW: Ask phase-specific questions
+    if current_sub_step == "interview":
+        if user_response.strip():
+            # User answered questions — store and advance to draft
+            answers = state.phase_interview_answers.get(target_phase, [])
+            answers.append(user_response)
+            state.phase_interview_answers[target_phase] = answers
+            state.sub_step = "draft"
+            state.status = "in_progress"
+        else:
+            # No answers yet — return questions
+            questions = PHASE_INTERVIEW_QUESTIONS.get(target_phase, [])
+            state.phase = target_phase
+            state.status = "needs_user_input"
+            state.pending_questions = list(questions)
+            state.next_recommended_action = (
+                f"Answer the {target_phase} interview questions, then call "
+                f"advance_lifecycle_phase with the answers in user_response."
+            )
+            state.record_phase(
+                target_phase, "needs_user_input",
+                f"Entered {target_phase} phase — interview questions sent.",
+            )
+            if allow_workspace_write:
+                save_state(state)
+
+            q_list = "\n".join(f"{i+1}. {q}" for i, q in enumerate(questions))
+            return f"""# {PHASE_TITLES[target_phase]} — Interview
+
+Project id: `{project_id}`
+Current phase: `{target_phase}`
+Sub-step: `interview`
+Status: `needs_user_input`
+
+## Before I can generate the {target_phase} artifact, I need your input.
+
+Please answer these questions:
+
+{q_list}
+
+## Agent Instruction
+Ask the user these questions. After they answer, call:
+`advance_lifecycle_phase(project_id="{project_id}", workspace_root="{workspace_root}", user_response="<their answers>")`
+"""
+
+    # DRAFT / REVIEW / FINALIZE: Generate artifact
+    if current_sub_step == "review" and user_response.strip():
+        # User provided review feedback — advance to finalize
+        answers = state.phase_interview_answers.get(target_phase, [])
+        answers.append(f"[REVIEW FEEDBACK]: {user_response}")
+        state.phase_interview_answers[target_phase] = answers
+        state.sub_step = "finalize"
+
+    # Handle phase override logging
     if phase_override and target_phase != next_phase(state.phase):
         state.decisions.append(
             DecisionRecord(
@@ -464,16 +708,36 @@ Current phase: `{state.phase}`
 
     previous_phase = state.phase
     state.phase = target_phase
-    state.status = "in_progress"
     state.allow_diagrams = allow_diagrams
     state.pending_questions = []
-    state.next_recommended_action = (
-        f"Review the `{target_phase}` artifact with review_lifecycle_gate."
-    )
+
+    # Set sub-step for next call
+    if state.sub_step == "draft":
+        state.status = "needs_user_input"
+        state.sub_step = "review"
+        state.next_recommended_action = (
+            f"Review the DRAFT {target_phase} artifact. Provide feedback or "
+            f"approve by calling advance_lifecycle_phase again."
+        )
+        label = "DRAFT"
+    elif state.sub_step == "finalize":
+        state.status = "in_progress"
+        state.sub_step = "interview"  # Reset for next phase
+        state.next_recommended_action = (
+            f"Review the finalized `{target_phase}` artifact with review_lifecycle_gate."
+        )
+        label = "FINAL"
+    else:
+        state.status = "in_progress"
+        state.next_recommended_action = (
+            f"Review the `{target_phase}` artifact with review_lifecycle_gate."
+        )
+        label = "FINAL"
+
     state.record_phase(
         target_phase,
-        "in_progress",
-        f"Advanced from {previous_phase} to {target_phase}.",
+        state.status,
+        f"{label}: Advanced from {previous_phase} to {target_phase}.",
     )
 
     if allow_workspace_write:
@@ -489,14 +753,44 @@ Current phase: `{state.phase}`
             "without updating state.json."
         )
 
-    return f"""# Lifecycle Phase Advanced
+    # Different output for draft vs final
+    if label == "DRAFT":
+        return f"""# {PHASE_TITLES[target_phase]} — Draft For Review
 
 Project id: `{project_id}`
 Previous phase: `{previous_phase}`
 Current phase: `{target_phase}`
+Sub-step: `review`
+Status: `needs_user_input`
+
+{persistence}
+
+{artifact}
+
+---
+## ⚠️ This is a DRAFT — Please Review
+Please review the above artifact and provide feedback:
+- Is anything missing?
+- Is anything incorrect?
+- Should anything be changed?
+
+Once satisfied, call `advance_lifecycle_phase` again to finalize, or 
+provide feedback in `user_response` for revisions.
+"""
+
+    return f"""# {PHASE_TITLES[target_phase]} — Finalized
+
+Project id: `{project_id}`
+Previous phase: `{previous_phase}`
+Current phase: `{target_phase}`
+Sub-step: `finalize`
 Status: `in_progress`
 
 {persistence}
 
 {artifact}
+
+## Next MCP Action
+Review this artifact with `review_lifecycle_gate(phase="{target_phase}")`, 
+then proceed to the next phase.
 """

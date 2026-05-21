@@ -168,17 +168,38 @@ def save_diagram(
     diagram_type: str,
     mermaid: str,
 ) -> DiagramRecord:
-    """Save a Mermaid diagram and update state."""
+    """Save a Mermaid diagram, render an image, and update state."""
+    from se_lifecycle_mcp.diagram_renderer import (
+        get_mermaid_ink_url,
+        get_mermaid_live_url,
+        render_mermaid_to_file,
+    )
+
     directory = diagrams_dir(state.workspace_root, state.project_id)
     directory.mkdir(parents=True, exist_ok=True)
+
+    # Save the Mermaid source (.mmd)
     filename = f"{slugify(diagram_type)}.mmd"
     path = directory / filename
     path.write_text(mermaid, encoding="utf-8")
+
+    # Render to SVG image via mermaid.ink
+    image_filename = f"{slugify(diagram_type)}.svg"
+    image_path = directory / image_filename
+    rendered = render_mermaid_to_file(mermaid, image_path, fmt="svg")
+
+    # Generate viewable URLs
+    image_url = get_mermaid_ink_url(mermaid, fmt="svg")
+    editor_url = get_mermaid_live_url(mermaid)
+
     record = DiagramRecord(
         diagram_type=diagram_type,
         filename=filename,
         path=str(path),
         written=True,
+        image_path=str(image_path) if rendered else "",
+        image_url=image_url,
+        editor_url=editor_url,
     )
     state.diagrams[diagram_type] = record
     return record

@@ -1,4 +1,7 @@
-"""Typed lifecycle models for the SE Lifecycle MCP."""
+"""Typed lifecycle models for the SE Lifecycle MCP.
+
+Includes sub-phase interview system for step-by-step user interaction.
+"""
 
 from __future__ import annotations
 
@@ -28,6 +31,20 @@ LifecycleStatus = Literal[
 ]
 
 GateStatus = Literal["pass", "needs_work", "blocked"]
+
+SubStep = Literal[
+    "interview",
+    "draft",
+    "review",
+    "finalize",
+]
+
+SUB_STEPS: tuple[SubStep, ...] = (
+    "interview",
+    "draft",
+    "review",
+    "finalize",
+)
 
 PHASES: tuple[LifecyclePhase, ...] = (
     "communication",
@@ -135,12 +152,15 @@ class TraceabilityRecord:
 
 @dataclass
 class DiagramRecord:
-    """A generated Mermaid diagram."""
+    """A generated Mermaid diagram with optional rendered image."""
 
     diagram_type: str
     filename: str
     path: str = ""
     written: bool = False
+    image_path: str = ""
+    image_url: str = ""
+    editor_url: str = ""
 
 
 @dataclass
@@ -151,11 +171,13 @@ class ProjectState:
     idea: str
     workspace_root: str
     phase: LifecyclePhase = "communication"
+    sub_step: SubStep = "interview"
     status: LifecycleStatus = "in_progress"
     target_users: str = ""
     constraints: str = ""
     allow_diagrams: bool = True
     assumptions: list[str] = field(default_factory=list)
+    phase_interview_answers: dict[str, list[str]] = field(default_factory=dict)
     pending_questions: list[str] = field(default_factory=list)
     completed_gates: dict[str, GateRecord] = field(default_factory=dict)
     artifacts: dict[str, ArtifactRecord] = field(default_factory=dict)
@@ -216,11 +238,13 @@ class ProjectState:
             idea=data["idea"],
             workspace_root=data.get("workspace_root", ""),
             phase=data.get("phase", "communication"),
+            sub_step=data.get("sub_step", "interview"),
             status=data.get("status", "in_progress"),
             target_users=data.get("target_users", ""),
             constraints=data.get("constraints", ""),
             allow_diagrams=data.get("allow_diagrams", True),
             assumptions=list(data.get("assumptions", [])),
+            phase_interview_answers=dict(data.get("phase_interview_answers", {})),
             pending_questions=list(data.get("pending_questions", [])),
             completed_gates=completed_gates,
             artifacts=artifacts,
