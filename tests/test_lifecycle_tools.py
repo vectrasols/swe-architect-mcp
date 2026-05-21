@@ -8,8 +8,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from se_lifecycle_mcp.llm.base import LLMProvider
-from se_lifecycle_mcp.tools import (
+from swe_architect_mcp.llm.base import LLMProvider
+from swe_architect_mcp.tools import (
     advance_lifecycle_phase,
     generate_lifecycle_diagram,
     review_lifecycle_gate,
@@ -46,7 +46,7 @@ class LifecycleToolTests(unittest.IsolatedAsyncioTestCase):
         server_source = (
             Path(__file__).resolve().parents[1]
             / "src"
-            / "se_lifecycle_mcp"
+            / "swe_architect_mcp"
             / "server.py"
         ).read_text(encoding="utf-8")
 

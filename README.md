@@ -1,25 +1,25 @@
-# SE Lifecycle MCP
+# SWE Architect MCP
 
 > **Your AI coding agent's Software Engineering consultant.**
 
-SE Lifecycle MCP is a Model Context Protocol server that transforms a one-line product idea into a **disciplined, step-by-step engineering build** — guided by principles from **8 authoritative SE books** and **university-level software engineering** rigor.
+SWE Architect MCP is a Model Context Protocol server that transforms a one-line product idea into a **disciplined, step-by-step engineering build** — guided by **core industry software engineering principles** and **academic rigor**.
 
 Instead of letting AI agents jump from *"Build me this app"* to code, this MCP ensures every project goes through the **complete SDLC** — with user involvement at every phase.
 
 ---
 
-## 📚 Built on 8 SE Books
+## 📚 Built on Core Principles
 
-| Book | What It Contributes |
+| Concept | What It Contributes |
 |------|-------------------|
-| **Sommerville, Software Engineering 9th Ed** | SDLC phases, feasibility study, NFR taxonomy, 4 modeling perspectives, 9 architectural questions, V&V, 3 testing stages |
-| **The Pragmatic Programmer** | DRY, Orthogonality, Tracer Bullets, Broken Windows |
-| **Clean Code** | SOLID, naming, functions, error handling, testing (FIRST) |
-| **Code Complete** | Defensive programming, complexity management, boundary analysis |
-| **Design Patterns (GoF)** | 23 classical patterns + modern patterns |
-| **Refactoring** | Code smell detection and elimination |
-| **Pressman, Software Engineering** | Full SDLC phases, requirements engineering, modeling |
-| **Designing Data-Intensive Applications** | Consistency, scalability, data design |
+| **Software Architecture** | SDLC phases, feasibility study, NFR taxonomy, 4 modeling perspectives, 9 architectural questions, V&V, 3 testing stages |
+| **Pragmatic Practices** | DRY, Orthogonality, Tracer Bullets, Broken Windows |
+| **Clean Coding** | SOLID, naming, functions, error handling, testing (FIRST) |
+| **Defensive Design** | Defensive programming, complexity management, boundary analysis |
+| **Design Patterns** | 23 classical patterns + modern patterns |
+| **Code Refactoring** | Code smell detection and elimination |
+| **Requirements Engineering** | Full SDLC phases, requirements elicitation, modeling |
+| **Data-Intensive Design** | Consistency, scalability, data design |
 
 ---
 
@@ -60,7 +60,7 @@ User: "Build me a pharmacy inventory system"
 |------|---------|
 | `start_product_build` | Starts from a one-line idea. Creates the project and product vision. |
 | `advance_lifecycle_phase` | Moves through the SDLC with interview→draft→review→finalize flow. |
-| `review_lifecycle_gate` | Quality gate: `pass`, `needs_work`, or `blocked` — uses deep SE book knowledge. |
+| `review_lifecycle_gate` | Quality gate: `pass`, `needs_work`, or `blocked` — uses deep SE principle knowledge. |
 | `generate_lifecycle_diagram` | Produces 12 Mermaid diagram types with **rendered images** via mermaid.ink. |
 | `summarize_project_state` | Shows current phase, sub-step, artifacts, risks, gates, and next action. |
 
@@ -98,22 +98,22 @@ Diagrams are automatically rendered to **SVG images** via [mermaid.ink](https://
 ### Install from Source
 
 ```bash
-git clone https://github.com/Stranger-S8/Se-lifecycle-mcp.git
-cd Se-lifecycle-mcp
+git clone https://github.com/vectrasols/swe-architect-mcp.git
+cd swe-architect-mcp
 pip install -e ".[all,dev]"
 ```
 
 Or with **uv** (faster):
 ```bash
-git clone https://github.com/Stranger-S8/Se-lifecycle-mcp.git
-cd Se-lifecycle-mcp
+git clone https://github.com/vectrasols/swe-architect-mcp.git
+cd swe-architect-mcp
 uv sync
 ```
 
 ### Install from PyPI (when published)
 
 ```bash
-pip install se-lifecycle-mcp
+pip install swe-architect-mcp
 ```
 
 ---
@@ -141,17 +141,21 @@ OPENAI_API_KEY=sk-your-key-here
 
 # OR Google Gemini
 GOOGLE_API_KEY=your-google-key-here
+
+# OR use a generic key with auto-detection based on the model name
+SWE_ARCHITECT_MCP_API_KEY=sk-your-key-here
+SWE_ARCHITECT_MCP_MODEL=gpt-4o
 ```
 
 ### 2. Optional Settings
 
 ```bash
 # Override auto-detection
-SE_MCP_PROVIDER=anthropic
-SE_MCP_MODEL=claude-sonnet-4-20250514
+SWE_ARCHITECT_MCP_PROVIDER=anthropic
+SWE_ARCHITECT_MCP_MODEL=claude-sonnet-4-20250514
 
 # Diagram rendering: mermaid_ink (default) or none
-SE_MCP_DIAGRAM_RENDERER=mermaid_ink
+SWE_ARCHITECT_MCP_DIAGRAM_RENDERER=mermaid_ink
 ```
 
 > **Note**: If no API key is configured, the server still works using deterministic fallback templates — no LLM required for basic functionality.
@@ -172,8 +176,8 @@ Edit `~/.config/Claude/claude_desktop_config.json`:
   "mcpServers": {
     "se-lifecycle": {
       "command": "python3",
-      "args": ["-m", "se_lifecycle_mcp"],
-      "cwd": "/path/to/Se-lifecycle-mcp",
+      "args": ["-m", "swe_architect_mcp"],
+      "cwd": "/path/to/swe-architect-mcp",
       "env": {
         "ANTHROPIC_API_KEY": "sk-ant-your-key-here"
       }
@@ -188,7 +192,7 @@ If using **uv**:
   "mcpServers": {
     "se-lifecycle": {
       "command": "uv",
-      "args": ["run", "--directory", "/path/to/Se-lifecycle-mcp", "python", "-m", "se_lifecycle_mcp"],
+      "args": ["run", "--directory", "/path/to/swe-architect-mcp", "python", "-m", "swe_architect_mcp"],
       "env": {
         "ANTHROPIC_API_KEY": "sk-ant-your-key-here"
       }
@@ -208,8 +212,8 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
   "mcpServers": {
     "se-lifecycle": {
       "command": "python3",
-      "args": ["-m", "se_lifecycle_mcp"],
-      "cwd": "/path/to/Se-lifecycle-mcp",
+      "args": ["-m", "swe_architect_mcp"],
+      "cwd": "/path/to/swe-architect-mcp",
       "env": {
         "ANTHROPIC_API_KEY": "sk-ant-your-key-here"
       }
@@ -224,7 +228,7 @@ If using **uv**:
   "mcpServers": {
     "se-lifecycle": {
       "command": "uv",
-      "args": ["run", "--directory", "/path/to/Se-lifecycle-mcp", "python", "-m", "se_lifecycle_mcp"],
+      "args": ["run", "--directory", "/path/to/swe-architect-mcp", "python", "-m", "swe_architect_mcp"],
       "env": {
         "ANTHROPIC_API_KEY": "sk-ant-your-key-here"
       }
@@ -244,8 +248,8 @@ Edit `%APPDATA%\Claude\claude_desktop_config.json`:
   "mcpServers": {
     "se-lifecycle": {
       "command": "python",
-      "args": ["-m", "se_lifecycle_mcp"],
-      "cwd": "C:\\path\\to\\Se-lifecycle-mcp",
+      "args": ["-m", "swe_architect_mcp"],
+      "cwd": "C:\\path\\to\\swe-architect-mcp",
       "env": {
         "ANTHROPIC_API_KEY": "sk-ant-your-key-here"
       }
@@ -260,7 +264,7 @@ If using **uv**:
   "mcpServers": {
     "se-lifecycle": {
       "command": "uv",
-      "args": ["run", "--directory", "C:\\path\\to\\Se-lifecycle-mcp", "python", "-m", "se_lifecycle_mcp"],
+      "args": ["run", "--directory", "C:\\path\\to\\swe-architect-mcp", "python", "-m", "swe_architect_mcp"],
       "env": {
         "ANTHROPIC_API_KEY": "sk-ant-your-key-here"
       }
@@ -276,10 +280,10 @@ If using **uv**:
 
 ```bash
 # Add the MCP server
-claude mcp add se-lifecycle -- python -m se_lifecycle_mcp
+claude mcp add se-lifecycle -- python -m swe_architect_mcp
 
 # Or with a specific path
-claude mcp add se-lifecycle -- python -m se_lifecycle_mcp --directory /path/to/Se-lifecycle-mcp
+claude mcp add se-lifecycle -- python -m swe_architect_mcp --directory /path/to/swe-architect-mcp
 ```
 
 ---
@@ -296,8 +300,8 @@ Create or edit `.vscode/mcp.json` in your workspace:
   "servers": {
     "se-lifecycle": {
       "command": "python3",
-      "args": ["-m", "se_lifecycle_mcp"],
-      "cwd": "/path/to/Se-lifecycle-mcp",
+      "args": ["-m", "swe_architect_mcp"],
+      "cwd": "/path/to/swe-architect-mcp",
       "env": {
         "ANTHROPIC_API_KEY": "sk-ant-your-key-here"
       }
@@ -317,8 +321,8 @@ Create or edit `.vscode\mcp.json` in your workspace:
   "servers": {
     "se-lifecycle": {
       "command": "python",
-      "args": ["-m", "se_lifecycle_mcp"],
-      "cwd": "C:\\path\\to\\Se-lifecycle-mcp",
+      "args": ["-m", "swe_architect_mcp"],
+      "cwd": "C:\\path\\to\\swe-architect-mcp",
       "env": {
         "ANTHROPIC_API_KEY": "sk-ant-your-key-here"
       }
@@ -342,8 +346,8 @@ Add to your VS Code `settings.json`:
   "github.copilot.chat.mcpServers": {
     "se-lifecycle": {
       "command": "python3",
-      "args": ["-m", "se_lifecycle_mcp"],
-      "cwd": "/path/to/Se-lifecycle-mcp",
+      "args": ["-m", "swe_architect_mcp"],
+      "cwd": "/path/to/swe-architect-mcp",
       "env": {
         "ANTHROPIC_API_KEY": "sk-ant-your-key-here"
       }
@@ -369,8 +373,8 @@ Edit `~/.codeium/windsurf/mcp_config.json` (Linux/macOS) or `%USERPROFILE%\.code
   "mcpServers": {
     "se-lifecycle": {
       "command": "python3",
-      "args": ["-m", "se_lifecycle_mcp"],
-      "cwd": "/path/to/Se-lifecycle-mcp",
+      "args": ["-m", "swe_architect_mcp"],
+      "cwd": "/path/to/swe-architect-mcp",
       "env": {
         "ANTHROPIC_API_KEY": "sk-ant-your-key-here"
       }
@@ -394,8 +398,8 @@ Antigravity auto-discovers MCP servers. Add to your workspace's MCP config:
   "mcpServers": {
     "se-lifecycle": {
       "command": "python3",
-      "args": ["-m", "se_lifecycle_mcp"],
-      "cwd": "/path/to/Se-lifecycle-mcp",
+      "args": ["-m", "swe_architect_mcp"],
+      "cwd": "/path/to/swe-architect-mcp",
       "env": {
         "ANTHROPIC_API_KEY": "sk-ant-your-key-here"
       }
@@ -416,8 +420,8 @@ For any MCP-compatible client, use this configuration:
   "mcpServers": {
     "se-lifecycle": {
       "command": "python3",
-      "args": ["-m", "se_lifecycle_mcp"],
-      "cwd": "/path/to/Se-lifecycle-mcp",
+      "args": ["-m", "swe_architect_mcp"],
+      "cwd": "/path/to/swe-architect-mcp",
       "env": {
         "ANTHROPIC_API_KEY": "sk-ant-your-key-here"
       }
@@ -439,13 +443,13 @@ After configuring, test your setup:
 
 ```bash
 # Run the server directly to check for errors
-python -m se_lifecycle_mcp
+python -m swe_architect_mcp
 
 # Run the test suite
 python -m pytest tests/ -v
 
 # Check that imports work
-python -c "from se_lifecycle_mcp.server import mcp; print('✅ Server loaded')"
+python -c "from swe_architect_mcp.server import mcp; print('✅ Server loaded')"
 ```
 
 ---
@@ -469,10 +473,10 @@ Diagrams are automatically rendered as **SVG images** via the free [mermaid.ink]
 
 ```bash
 # Default: render via mermaid.ink (requires internet)
-SE_MCP_DIAGRAM_RENDERER=mermaid_ink
+SWE_ARCHITECT_MCP_DIAGRAM_RENDERER=mermaid_ink
 
 # Disable rendering (only save .mmd text files)
-SE_MCP_DIAGRAM_RENDERER=none
+SWE_ARCHITECT_MCP_DIAGRAM_RENDERER=none
 ```
 
 ### Companion Diagram MCPs (Optional)
@@ -488,16 +492,16 @@ For **live preview** in your IDE, you can also connect these open-source diagram
 
 ## 🏗️ Lifecycle Phases
 
-| # | Phase | Sommerville Reference | What Happens |
+| # | Phase | Academic Reference | What Happens |
 |---|-------|----------------------|-------------|
-| 1 | **Communication** | Ch.2: Inception + Feasibility Study | Understand idea, users, scope. Assess technical, economic, operational feasibility. |
-| 2 | **Requirements** | Ch.4: RE Process (Elicitation → Specification → Validation) | Functional, non-functional (product/organizational/external), domain, inverse requirements. |
-| 3 | **Modeling** | Ch.5: 4 Perspectives (External, Interaction, Structural, Behavioral) | Use cases, data models, state machines, sequence diagrams. 5 essential UML diagram types. |
-| 4 | **Design** | Ch.6: 4 Design Activities + 9 Architectural Questions | Architecture, interfaces, components, database. SOLID, orthogonality, reversibility. |
-| 5 | **Planning** | Ch.22-23: Risk Management + Project Planning | Priority ordering, risk classification (project/product/business), milestones. |
-| 6 | **Construction** | Ch.7 + Clean Code + Code Complete | Code against approved design. Scope creep checks, code smell detection. |
-| 7 | **Testing** | Ch.8: V&V + 3 Testing Stages | Development → System → Acceptance testing. Verification AND validation. |
-| 8 | **Deployment** | RUP Transition + Ch.9: Software Evolution | Environment setup, handoff, maintenance strategy, evolution planning. |
+| 1 | **Communication** | Inception + Feasibility Study | Understand idea, users, scope. Assess technical, economic, operational feasibility. |
+| 2 | **Requirements** | RE Process (Elicitation → Specification → Validation) | Functional, non-functional (product/organizational/external), domain, inverse requirements. |
+| 3 | **Modeling** | 4 Perspectives (External, Interaction, Structural, Behavioral) | Use cases, data models, state machines, sequence diagrams. 5 essential UML diagram types. |
+| 4 | **Design** | 4 Design Activities + 9 Architectural Questions | Architecture, interfaces, components, database. SOLID, orthogonality, reversibility. |
+| 5 | **Planning** | Risk Management + Project Planning | Priority ordering, risk classification (project/product/business), milestones. |
+| 6 | **Construction** | Clean Code + Code Complete | Code against approved design. Scope creep checks, code smell detection. |
+| 7 | **Testing** | V&V + 3 Testing Stages | Development → System → Acceptance testing. Verification AND validation. |
+| 8 | **Deployment** | RUP Transition + Software Evolution | Environment setup, handoff, maintenance strategy, evolution planning. |
 
 ---
 
@@ -505,15 +509,15 @@ For **live preview** in your IDE, you can also connect these open-source diagram
 
 ```bash
 # Clone and setup
-git clone https://github.com/Stranger-S8/Se-lifecycle-mcp.git
-cd Se-lifecycle-mcp
+git clone https://github.com/vectrasols/swe-architect-mcp.git
+cd swe-architect-mcp
 pip install -e ".[all,dev]"
 
 # Run tests
 python -m pytest tests/ -v
 
 # Run the server
-python -m se_lifecycle_mcp
+python -m swe_architect_mcp
 
 # Lint
 ruff check src/
@@ -527,8 +531,8 @@ mypy src/
 ## 📁 Project Structure
 
 ```
-Se-lifecycle-mcp/
-├── src/se_lifecycle_mcp/
+swe-architect-mcp/
+├── src/swe_architect_mcp/
 │   ├── __init__.py
 │   ├── __main__.py
 │   ├── server.py                 # FastMCP server with 5 tools
@@ -540,9 +544,9 @@ Se-lifecycle-mcp/
 │   │   ├── anthropic_provider.py
 │   │   ├── openai_provider.py
 │   │   └── google_provider.py
-│   ├── prompts/                  # System prompts (SE book knowledge)
+│   ├── prompts/                  # System prompts (core SE principles)
 │   │   ├── discovery.py          # Product discovery prompt
-│   │   ├── phase.py              # Phase-specific knowledge (8 books)
+│   │   ├── phase.py              # Phase-specific knowledge
 │   │   ├── gate_review.py        # Quality gate criteria
 │   │   └── diagram.py            # Diagram generation prompt
 │   └── tools/                    # MCP tool implementations
@@ -555,7 +559,6 @@ Se-lifecycle-mcp/
 │   └── test_lifecycle_tools.py
 ├── docs/
 │   └── PROJECT_DOCUMENTATION.md
-├── lectures/                     # Reference SE textbooks
 ├── .env.example
 ├── pyproject.toml
 ├── requirements.txt
@@ -570,6 +573,6 @@ MIT License — see [LICENSE](LICENSE) for details.
 
 ---
 
-**5 tools. 8 books. 43 interview questions. 12 diagram types. One MCP server.**
+**5 tools. 43 interview questions. 12 diagram types. One MCP server.**
 
 **Write better software.** 🚀

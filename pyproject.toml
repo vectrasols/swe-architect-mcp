@@ -3,13 +3,13 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "se-lifecycle-mcp"
+name = "swe-architect-mcp"
 version = "0.1.0"
 description = "SDLC-guided MCP server that turns one-line product ideas into lifecycle-driven software builds."
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
-authors = [{ name = "SE Lifecycle MCP Contributors" }]
+authors = [{ name = "Vectra Sols" }]
 dependencies = [
     "mcp>=1.0.0",
     "python-dotenv>=1.0.0",
@@ -32,17 +32,12 @@ dev = [
 ]
 
 [project.scripts]
-se-lifecycle-mcp = "se_lifecycle_mcp.__main__:main"
+swe-architect-mcp = "swe_architect_mcp.__main__:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
-include = ["se_lifecycle_mcp*"]
+include = ["swe_architect_mcp*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
-
-[tool.uv.workspace]
-members = [
-    "Test Project 1",
-]

@@ -22,6 +22,8 @@ ENV/
 
 # SE Lifecycle MCP generated artifacts
 .se-lifecycle/
+.agents/
+.codex/
 
 # IDE
 .vscode/

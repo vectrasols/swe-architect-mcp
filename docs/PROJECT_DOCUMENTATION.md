@@ -1,8 +1,8 @@
-# SE Lifecycle MCP - Complete Project Documentation
+# SWE Architect MCP - Complete Project Documentation
 
 ## 1. Project Overview
 
-SE Lifecycle MCP is a Model Context Protocol server that helps AI coding agents
+SWE Architect MCP is a Model Context Protocol server that helps AI coding agents
 build software products through a complete software engineering lifecycle. The
 main idea is simple: instead of asking an agent to immediately code after a
 one-line request like "Build me a pharmacy inventory system", the MCP guides the
@@ -14,10 +14,8 @@ questions at every phase before generating artifacts. It never advances without
 user permission. Each phase follows a sub-step flow:
 **interview → draft → review → finalize → gate review → next phase**.
 
-All prompts and quality gates are enriched with deep knowledge from 8 major SE
-books: The Pragmatic Programmer, Clean Code, Code Complete, Design Patterns,
-Refactoring, Pressman SE, Sommerville SE (9th Edition), and Designing
-Data-Intensive Applications.
+All prompts and quality gates are enriched with deep knowledge from core industry
+software engineering principles and academic rigor.
 
 The product is designed for local and remote MCP-compatible coding agents. The
 agent still performs the actual code edits, but this MCP acts as the software
@@ -36,7 +34,7 @@ thinking that makes a product useful and maintainable. Common problems include:
 - The final product may run, but may not solve the actual user need.
 - The user has no clear lifecycle artifacts to review.
 
-SE Lifecycle MCP solves this by making the agent follow a structured,
+SWE Architect MCP solves this by making the agent follow a structured,
 lightweight lifecycle before and during implementation.
 
 ## 3. Core Product Promise
@@ -70,7 +68,7 @@ more useful final product.
 The active product is the lifecycle MCP under:
 
 ```text
-src/se_lifecycle_mcp/
+src/swe_architect_mcp/
 ```
 
 ## 5. Main Architecture
@@ -78,7 +76,7 @@ src/se_lifecycle_mcp/
 The project follows a modular Python structure:
 
 ```text
-src/se_lifecycle_mcp/
+src/swe_architect_mcp/
 |-- __init__.py
 |-- __main__.py
 |-- server.py
@@ -122,7 +120,7 @@ src/se_lifecycle_mcp/
 The active MCP server is:
 
 ```text
-src/se_lifecycle_mcp/server.py
+src/swe_architect_mcp/server.py
 ```
 
 The server object is:
@@ -134,13 +132,13 @@ mcp
 The FastMCP Cloud entrypoint is:
 
 ```text
-src/se_lifecycle_mcp/server.py:mcp
+src/swe_architect_mcp/server.py:mcp
 ```
 
 The local module entrypoint is:
 
 ```bash
-python -m se_lifecycle_mcp
+python -m swe_architect_mcp
 ```
 
 The convenience root entrypoint is:
@@ -581,7 +579,7 @@ This gives the final product a clear proof chain from user need to delivery.
 The project uses a provider abstraction:
 
 ```text
-src/se_lifecycle_mcp/llm/base.py
+src/swe_architect_mcp/llm/base.py
 ```
 
 Supported providers:
@@ -593,23 +591,26 @@ Supported providers:
 Provider selection is handled by:
 
 ```text
-src/se_lifecycle_mcp/llm/factory.py
+src/swe_architect_mcp/llm/factory.py
 ```
 
 Detection order:
 
 1. Explicit provider argument.
-2. `SE_MCP_PROVIDER` environment variable.
-3. Auto-detection from available API keys.
+2. `SWE_ARCHITECT_MCP_PROVIDER` environment variable.
+3. Auto-detection from `SWE_ARCHITECT_MCP_MODEL` or model name argument.
+4. Auto-detection from API key format (`SWE_ARCHITECT_MCP_API_KEY`).
+5. Auto-detection from specific API key environment variables.
 
 Supported environment variables:
 
 ```text
+SWE_ARCHITECT_MCP_API_KEY
 ANTHROPIC_API_KEY
 OPENAI_API_KEY
 GOOGLE_API_KEY
-SE_MCP_PROVIDER
-SE_MCP_MODEL
+SWE_ARCHITECT_MCP_PROVIDER
+SWE_ARCHITECT_MCP_MODEL
 ```
 
 If no provider is configured, tools still work using deterministic fallback
@@ -666,7 +667,7 @@ Mermaid is used because it is:
 The MCP server automatically renders Mermaid text into visual diagrams using the free [mermaid.ink](https://mermaid.ink) API.
 - Source `.mmd` files and rendered `.svg` images are saved side-by-side in the `diagrams/` folder.
 - Generated diagrams include a browser-viewable URL and an interactive Mermaid Live Editor link.
-- Rendering can be configured via `SE_MCP_DIAGRAM_RENDERER` (`mermaid_ink` or `none`).
+- Rendering can be configured via `SWE_ARCHITECT_MCP_DIAGRAM_RENDERER` (`mermaid_ink` or `none`).
 
 Supported diagrams:
 
@@ -708,7 +709,7 @@ python -m compileall src tests
 Run local MCP server:
 
 ```bash
-python -m se_lifecycle_mcp
+python -m swe_architect_mcp
 ```
 
 ## 16. FastMCP Cloud Deployment
@@ -716,14 +717,14 @@ python -m se_lifecycle_mcp
 Repository:
 
 ```text
-https://github.com/Stranger-S8/Se-lifecycle-mcp
+https://github.com/Stranger-S8/swe-architect-mcp
 ```
 
 FastMCP Cloud project settings:
 
 ```text
-Server name: se-lifecycle-mcp
-Entrypoint: src/se_lifecycle_mcp/server.py:mcp
+Server name: swe-architect-mcp
+Entrypoint: src/swe_architect_mcp/server.py:mcp
 ```
 
 Suggested description:
@@ -736,8 +737,8 @@ Environment variables:
 
 ```text
 ANTHROPIC_API_KEY=your_key_here
-SE_MCP_PROVIDER=anthropic
-SE_MCP_MODEL=claude-sonnet-4-20250514
+SWE_ARCHITECT_MCP_PROVIDER=anthropic
+SWE_ARCHITECT_MCP_MODEL=claude-sonnet-4-20250514
 ```
 
 Cloud note:
@@ -752,7 +753,7 @@ For local agents building real products in local repositories,
 Local Claude Code example:
 
 ```bash
-claude mcp add se-lifecycle -- python -m se_lifecycle_mcp
+claude mcp add se-lifecycle -- python -m swe_architect_mcp
 ```
 
 Generic MCP config:
@@ -762,7 +763,7 @@ Generic MCP config:
   "mcpServers": {
     "se-lifecycle": {
       "command": "python",
-      "args": ["-m", "se_lifecycle_mcp"],
+      "args": ["-m", "swe_architect_mcp"],
       "env": {
         "ANTHROPIC_API_KEY": "your-key-here"
       }
@@ -858,19 +859,19 @@ pyproject.toml
 Distribution name:
 
 ```text
-se-lifecycle-mcp
+swe-architect-mcp
 ```
 
 Python package:
 
 ```text
-se_lifecycle_mcp
+swe_architect_mcp
 ```
 
 Console script:
 
 ```text
-se-lifecycle-mcp
+swe-architect-mcp
 ```
 
 Core dependencies:
@@ -957,7 +958,7 @@ Strong next features:
 
 ## 25. Summary
 
-SE Lifecycle MCP is a lifecycle orchestration server for AI coding agents. It
+SWE Architect MCP is a lifecycle orchestration server for AI coding agents. It
 turns a rough product idea into structured engineering artifacts, phase gates,
 diagrams, and implementation guidance. Its purpose is to help agents build
 excellent software products, not just fast code. Every phase follows the
