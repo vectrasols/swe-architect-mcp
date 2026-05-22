@@ -6,6 +6,7 @@ from swe_architect_mcp.llm.base import LLMProvider
 from swe_architect_mcp.models import DecisionRecord, ProjectState, RiskRecord
 from swe_architect_mcp.prompts.discovery import SYSTEM_PROMPT
 from swe_architect_mcp.tools._llm import generate_with_fallback
+from swe_architect_mcp.tools._local_content import infer_product_context
 from swe_architect_mcp.workspace import (
     new_project_id,
     record_virtual_artifact,
@@ -51,62 +52,74 @@ def _fallback_vision(
     constraints: str = "",
 ) -> str:
     """Create a useful deterministic discovery artifact."""
-    users = target_users or "Primary users still need to be identified."
-    constraints_text = constraints or "No hard constraints have been supplied yet."
+    context = infer_product_context(
+        idea=idea,
+        target_users=target_users,
+        constraints=constraints,
+    )
     return f"""# Product Vision
 
-## Problem
-The user wants to build: {idea}
+## Problem Statement
+The user wants to build {context.product_name}: {idea}
 
 ## Target Users
-{users}
+- Primary: {context.actor_label}
+- Secondary: maintainers or admins who keep the product reliable.
 
 ## Product Goal
-Create a working product through a disciplined lifecycle before writing code:
-communication, requirements, modeling, design, planning, construction, testing,
-and handoff.
+Let {context.actor_label} {context.workflow} through a small, reliable MVP.
+
+## Minimum Viable Slice
+The first useful slice should support one end-to-end workflow:
+1. A user starts the main {context.product_name} workflow.
+2. The system validates the request.
+3. The system creates or updates a {context.primary_entity}.
+4. The result is saved.
+5. The user sees clear success or error feedback.
 
 ## Scope
-- Clarify the user problem and success criteria.
-- Produce requirements with acceptance criteria.
-- Model data, flows, behavior, and user interactions.
-- Design a scalable MVP architecture.
-- Plan implementation tasks and quality gates.
-- Review construction and testing before handoff.
+- Confirm the primary users, workflow, and success criteria.
+- Track the main {context.primary_entity} data needed for the MVP.
+- Include happy path, validation errors, empty states, and persistence behavior.
+- Produce lifecycle artifacts before implementation begins.
 
 ## Out Of Scope
-- Starting implementation before the requirements, models, design, and plan are
+- Advanced automation, analytics, payments, notifications, or integrations unless
+  the user explicitly says they are required for v1.
+- Starting implementation before requirements, models, design, and plan are
   reviewed.
-- Adding speculative features that do not support the MVP.
 
 ## Success Criteria
-- The user can confirm the MVP goal in plain language.
-- Each requirement has acceptance criteria.
-- Design decisions are traceable to requirements.
-- Implementation tasks map to tests and final verification.
+- The user can complete the main workflow without manual workaround.
+- Invalid input is rejected with useful feedback.
+- Saved {context.primary_entity} data can be recovered after restart or refresh.
+- Each must-have requirement has acceptance criteria and at least one test path.
 
 ## Initial Assumptions
 - The first release should be an MVP.
 - The local coding agent will perform file edits.
 - This MCP will guide, validate, and store lifecycle artifacts.
+- {context.stack_hint}
 
 ## Key Risks
-- Requirement ambiguity can cause the wrong product to be built.
-- Missing non-functional requirements can create security, reliability, or scale
-  issues later.
-- Skipping modeling/design can cause rework during implementation.
+- Requirement ambiguity: the exact user roles and first workflow may still be
+  incomplete.
+- Data risk: the required {context.primary_entity} fields and retention rules
+  are not fully confirmed.
+- Scope risk: optional features could distract from the first usable slice.
+- Technical risk: {context.constraints_summary}
 
 ## First Questions For The User
-1. Who are the primary users and what jobs do they need to complete?
-2. What is the smallest useful MVP you would accept as successful?
-3. Are there security, privacy, scale, budget, or technology constraints?
+1. Who exactly will use {context.product_name} first?
+2. What is the one workflow that must work on day one?
+3. What fields must a {context.primary_entity} store?
+4. What should happen when validation fails or data cannot be saved?
+5. What must be left out of v1 so the MVP stays focused?
+6. Are there security, privacy, scale, budget, or technology constraints?
 
 ## Agent Instruction
 Do not start coding yet. Ask the user the first questions, then call
 `advance_lifecycle_phase` to produce the requirements artifact.
-
-## Supplied Constraints
-{constraints_text}
 """
 
 

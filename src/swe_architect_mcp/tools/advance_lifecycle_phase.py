@@ -16,6 +16,7 @@ from swe_architect_mcp.models import (
 )
 from swe_architect_mcp.prompts.phase import SYSTEM_PROMPT
 from swe_architect_mcp.tools._llm import generate_with_fallback
+from swe_architect_mcp.tools._local_content import infer_product_context
 from swe_architect_mcp.workspace import (
     WorkspaceError,
     append_markdown_log,
@@ -216,65 +217,99 @@ def _fallback_phase_artifact(
         if allow_diagrams
         else "Diagrams are not allowed for this step."
     )
+    inferred = infer_product_context(
+        idea=state.idea,
+        target_users=state.target_users,
+        constraints=state.constraints,
+        user_response=user_response,
+    )
+    product = inferred.product_name
+    actor = inferred.actor_label
+    entity = inferred.primary_entity
+    event = inferred.secondary_entity
+    workflow = inferred.workflow
 
     phase_sections: dict[LifecyclePhase, str] = {
-        "requirements": """## Functional Requirements
+        "requirements": f"""## Functional Requirements
 | ID | Requirement | Priority | Acceptance Criteria |
 |---|---|---|---|
-| FR-1 | Define the core MVP workflow. | Must | User can complete the primary product workflow. |
-| FR-2 | Persist the main product data. | Must | Data survives refresh/restart according to the chosen stack. |
-| FR-3 | Provide clear feedback for success and failure states. | Should | User sees actionable messages for normal and error cases. |
+| FR-1 | Let {actor} {workflow}. | Must | User can complete the workflow from start to saved result. |
+| FR-2 | Store and retrieve {entity} records. | Must | Saved records remain available after restart or refresh. |
+| FR-3 | Validate required {entity} fields before saving. | Must | Invalid input is rejected with a clear, actionable message. |
+| FR-4 | Show empty, success, and failure states. | Should | User always knows what happened and what to do next. |
+| FR-5 | Keep an auditable history of important {event} changes where useful. | Could | Important changes can be reviewed without guessing. |
 
 ## Non-Functional Requirements
-- Reliability: handle invalid input without data loss.
-- Usability: primary workflows should be discoverable without training.
-- Security: avoid exposing secrets and validate untrusted input.
-- Scalability: keep module boundaries ready for future growth.
+- Product: the primary workflow should respond quickly for normal MVP data sizes.
+- Product: invalid input, duplicate actions, and save failures must not lose data.
+- Product: the main workflow should be understandable without training.
+- Organizational: {inferred.stack_hint}
+- External: confirm privacy, compliance, and integration rules before coding.
+- Security: validate untrusted input and keep secrets outside source control.
 
 ## Domain Requirements
-- Confirm domain entities and business rules with the user.
+- Define required fields, allowed status values, and ownership rules for {entity}.
+- Confirm who can create, update, archive, or delete {entity} records.
+- Confirm whether {event} history is mandatory or only useful for debugging.
 
 ## Inverse Requirements
-- The MVP must not include speculative features outside confirmed scope.
+- The MVP must not include speculative features outside the confirmed first slice.
+- The system must not silently discard invalid or unsaved user work.
+- Secrets, API keys, and private data must not be written into source control.
 
 ## Design Constraints
-- The coding agent must not choose a stack that conflicts with user constraints.
+- {inferred.constraints_summary}
+- The coding agent must not choose a stack that conflicts with confirmed constraints.
+- Keep persistence behind an interface so storage can change later.
 
 ## Open Questions
-- Which exact user roles are required for MVP?
-- Which data must be stored permanently?
+- Which user roles are required for v1?
+- What exact fields are required for {entity}?
+- What is the allowed lifecycle/status model for {entity}?
+- What should be excluded from v1?
 """,
-        "modeling": """## Use Cases / User Stories
-- As a primary user, I can complete the central product workflow.
-- As a maintainer, I can understand the system boundaries and data flow.
+        "modeling": f"""## Use Cases / User Stories
+- As {actor}, I can {workflow}.
+- As {actor}, I can recover from validation errors without losing my work.
+- As a maintainer, I can understand the {product} system boundaries and data flow.
 
 ## Context Model
-- User interacts with the product through the chosen interface.
-- Product reads/writes core domain data.
+- {actor} interacts with {product} through the chosen interface.
+- {product} reads and writes {entity} records.
 - External services remain optional until explicitly required.
 
 ## DFD-Style Flow
-1. User submits an intent.
-2. System validates the input.
-3. System performs domain operation.
-4. System persists state.
-5. System returns feedback.
+1. User starts the main workflow.
+2. Interface collects {entity} input.
+3. Application service validates the request.
+4. Domain rules create or update a {entity}.
+5. Repository persists the result and records important {event} history.
+6. Interface returns success, empty-state, or error feedback.
 
 ## Core Entities
 | Entity | Responsibility |
 |---|---|
-| User | Initiates product workflows. |
-| DomainRecord | Represents the main business object. |
-| OperationResult | Captures success, failure, and messages. |
+| User | Initiates {product} workflows. |
+| {entity} | Represents the main business object for the MVP. |
+| {event} | Captures meaningful status or history changes. |
+| OperationResult | Captures success, failure, and user-facing messages. |
+
+## Data Dictionary
+- {entity}: the main record the product manages.
+- {event}: an important change or action related to a {entity}.
+- OperationResult: a typed result returned by application services.
 
 ## Behavior Candidates
-- Happy path, validation failure, persistence failure, and retry path.
+- New -> Validated -> Saved -> Updated -> Archived.
+- Validation failure returns to editing with the user's input preserved.
+- Persistence failure leaves the user with a retry path and no silent data loss.
 
 ## Traceability Candidates
 - FR-1 maps to use cases and primary sequence flow.
 - FR-2 maps to data model and persistence design.
+- FR-3 maps to validation paths and error-state behavior.
 """,
-        "design": """## Architecture
+        "design": f"""## Architecture
 Use a simple layered or modular architecture for MVP:
 - Interface layer for user interaction.
 - Application layer for use cases.
@@ -284,68 +319,78 @@ Use a simple layered or modular architecture for MVP:
 ## Module Boundaries
 | Module | Responsibility |
 |---|---|
-| interface | Collect input and display results. |
-| application | Coordinate use cases. |
-| domain | Enforce business rules. |
-| infrastructure | Store data and talk to external systems. |
+| interface | Collect {entity} input and display results. |
+| application | Coordinate the {workflow} use case. |
+| domain | Enforce {entity} rules and status transitions. |
+| infrastructure | Store {entity} records and optional {event} history. |
 
 ## Interfaces And Contracts
-- Application services accept validated commands and return typed results.
-- Infrastructure adapters hide storage implementation details.
+- Application services accept command objects and return OperationResult values.
+- Repositories expose save, find, list, and delete/archive operations for {entity}.
+- Infrastructure adapters hide storage implementation details from domain logic.
 
 ## Data Storage
+- Persist {entity} records with stable ids, timestamps, status, and owner fields.
+- Store {event} history only if the user confirms audit/history value.
 - Start with the simplest persistence that satisfies MVP constraints.
 - Keep data access behind an interface so it can be replaced later.
 
 ## Failure Modes
-- Invalid input, persistence failure, unavailable dependency, duplicate action.
+- Invalid input, duplicate action, unavailable storage, persistence failure, and
+  missing record.
 
 ## Security And Scalability
 - Validate untrusted input.
 - Keep secrets outside source control.
 - Avoid global mutable state and tight coupling.
+- Keep authorization decisions explicit if multiple user roles exist.
 
 ## Testing Impact
-- Unit test domain rules.
+- Unit test {entity} validation and status rules.
 - Integration test persistence boundaries.
-- Smoke test the primary workflow.
+- Smoke test the main {product} workflow from input to saved result.
 """,
-        "planning": """## MVP Backlog
+        "planning": f"""## MVP Backlog
 | ID | Task | Depends On | Definition Of Done |
 |---|---|---|---|
-| T-1 | Scaffold the product structure. | Design gate | Project runs locally. |
-| T-2 | Implement core domain model. | T-1 | Unit tests cover business rules. |
-| T-3 | Implement primary workflow. | T-2 | Acceptance path passes. |
-| T-4 | Add persistence. | T-2 | Data is saved and loaded correctly. |
-| T-5 | Add smoke and regression tests. | T-3,T-4 | Tests run from one command. |
+| T-1 | Scaffold the {product} project structure. | Design gate | Project runs locally. |
+| T-2 | Implement the {entity} domain model. | T-1 | Unit tests cover required fields and status rules. |
+| T-3 | Implement the main workflow: {workflow}. | T-2 | Happy-path acceptance check passes. |
+| T-4 | Add persistence for {entity}. | T-2 | Records save, load, update, and survive restart/refresh. |
+| T-5 | Add error, empty-state, and regression tests. | T-3,T-4 | Tests run from one command. |
 
 ## Milestones
 - M1: runnable skeleton
-- M2: core workflow
-- M3: persistence and tests
+- M2: {entity} domain model and primary workflow
+- M3: persistence, validation errors, and tests
 - M4: handoff-ready MVP
 
 ## Definition Of Done
 - Requirements traced to code and tests.
-- Primary workflow works locally.
+- Primary {product} workflow works locally.
 - Known limitations are documented.
+
+## Risk Controls
+- Build the thinnest end-to-end workflow first.
+- Delay optional integrations until the core {entity} lifecycle is proven.
+- Re-run the lifecycle gate after each artifact revision.
 """,
-        "construction": """## Construction Review Focus
-- Confirm the implementation follows the approved requirements and design.
+        "construction": f"""## Construction Review Focus
+- Confirm the implementation follows the approved {product} requirements and design.
 - Check changed files against planned tasks.
 - Verify no major unplanned features were added.
-- Confirm errors, empty states, and persistence paths are handled.
+- Confirm {entity} validation, empty states, and persistence paths are handled.
 
 ## Agent Instruction
 Implement only the planned MVP tasks. After file edits, run relevant tests and
 call `review_lifecycle_gate` for the construction phase.
 """,
-        "testing": """## Test Strategy
+        "testing": f"""## Test Strategy
 | Test Type | Purpose |
 |---|---|
-| Unit | Validate domain rules and small pure functions. |
+| Unit | Validate {entity} rules and small pure functions. |
 | Integration | Validate persistence and module boundaries. |
-| Smoke | Verify the main workflow still works after changes. |
+| Smoke | Verify the main {product} workflow still works after changes. |
 | Regression | Protect fixed defects and critical flows. |
 | Acceptance | Prove each must-have requirement is satisfied. |
 
@@ -353,8 +398,15 @@ call `review_lifecycle_gate` for the construction phase.
 - FR-1 must have at least one acceptance test.
 - FR-2 must have persistence/integration coverage.
 - Error and empty states must be tested.
+
+## Critical Cases
+- Empty {entity} list.
+- Missing required field.
+- Duplicate or conflicting update.
+- Persistence failure.
+- Successful create/update/list flow.
 """,
-        "deployment": """## Handoff Checklist
+        "deployment": f"""## Handoff Checklist
 - Provide install and run commands.
 - Document environment variables and secrets.
 - List completed requirements.
@@ -364,9 +416,14 @@ call `review_lifecycle_gate` for the construction phase.
 
 ## Release Readiness
 The product is ready to hand off only after construction and testing gates pass.
+
+## Operational Notes
+- Document where {entity} records are stored.
+- Document backup/export expectations if the data matters to users.
+- Name the maintainer or owner responsible for future changes.
 """,
-        "communication": """## Communication Refresh
-Restate the product vision, stakeholders, value, scope, assumptions, and first
+        "communication": f"""## Communication Refresh
+Restate the {product} vision, stakeholders, value, scope, assumptions, and first
 questions before continuing.
 """,
     }

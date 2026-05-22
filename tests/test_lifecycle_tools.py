@@ -144,6 +144,30 @@ class LifecycleToolTests(unittest.IsolatedAsyncioTestCase):
             self.assertIn("Design Constraints", result)
             self.assertIn("Acceptance Criteria", result)
 
+    async def test_no_api_requirements_are_product_specific(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            start = await start_product_build.run(
+                idea="Build me a support ticket app",
+                workspace_root=tmp,
+                allow_workspace_write=True,
+                allow_diagrams=True,
+                llm=None,
+            )
+            project_id = _project_id_from(start)
+
+            result = await advance_lifecycle_phase.run(
+                project_id=project_id,
+                workspace_root=tmp,
+                user_response="Agents need to create, assign, and close tickets.",
+                allow_workspace_write=False,
+                allow_diagrams=True,
+                llm=None,
+            )
+
+            self.assertIn("Store and retrieve Ticket records", result)
+            self.assertIn("create tickets, assign owners, and resolve issues", result)
+            self.assertIn("What exact fields are required for Ticket?", result)
+
     async def test_review_call_finalizes_current_phase_before_advancing(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             start = await start_product_build.run(
@@ -217,6 +241,19 @@ class LifecycleToolTests(unittest.IsolatedAsyncioTestCase):
             self.assertTrue(diagram_path.exists())
             self.assertIn("flowchart", diagram_path.read_text(encoding="utf-8"))
             self.assertIn("```mermaid", result)
+
+    async def test_no_api_diagram_uses_product_entities(self) -> None:
+        result = await generate_lifecycle_diagram.run(
+            project_id="p",
+            workspace_root=".",
+            diagram_type="architecture",
+            source_artifact="# Pharmacy Inventory\nStaff update medication stock.",
+            allow_workspace_write=False,
+            llm=None,
+        )
+
+        self.assertIn("InventoryItem Domain Model", result)
+        self.assertIn("InventoryItem Store", result)
 
     async def test_gate_review_statuses(self) -> None:
         strong = """# Requirements
