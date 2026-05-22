@@ -431,6 +431,16 @@ def _choose_target_phase(
             )
         return normalized, ""
 
+    if state.sub_step in {"draft", "review", "finalize"}:
+        return state.phase, ""
+
+    if (
+        state.sub_step == "interview"
+        and state.status == "needs_user_input"
+        and state.phase != "communication"
+    ):
+        return state.phase, ""
+
     expected = next_phase(state.phase)
     if expected is None:
         return None, "Project is already at the final lifecycle phase."
@@ -659,11 +669,12 @@ Ask the user these questions. After they answer, call:
 """
 
     # DRAFT / REVIEW / FINALIZE: Generate artifact
-    if current_sub_step == "review" and user_response.strip():
-        # User provided review feedback — advance to finalize
+    if current_sub_step == "review":
+        # User reviewed the draft — with optional feedback — so finalize this phase.
         answers = state.phase_interview_answers.get(target_phase, [])
-        answers.append(f"[REVIEW FEEDBACK]: {user_response}")
-        state.phase_interview_answers[target_phase] = answers
+        if user_response.strip():
+            answers.append(f"[REVIEW FEEDBACK]: {user_response}")
+            state.phase_interview_answers[target_phase] = answers
         state.sub_step = "finalize"
 
     # Handle phase override logging

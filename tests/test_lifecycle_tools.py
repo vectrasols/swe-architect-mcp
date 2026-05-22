@@ -138,6 +138,49 @@ class LifecycleToolTests(unittest.IsolatedAsyncioTestCase):
             self.assertIn("Design Constraints", result)
             self.assertIn("Acceptance Criteria", result)
 
+    async def test_review_call_finalizes_current_phase_before_advancing(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            start = await start_product_build.run(
+                idea="Build me a support ticket app",
+                workspace_root=tmp,
+                allow_workspace_write=True,
+                allow_diagrams=True,
+                llm=None,
+            )
+            project_id = _project_id_from(start)
+
+            draft = await advance_lifecycle_phase.run(
+                project_id=project_id,
+                workspace_root=tmp,
+                user_response="Agents need to create, assign, and close tickets.",
+                allow_workspace_write=True,
+                allow_diagrams=True,
+                llm=None,
+            )
+            self.assertIn("Requirements Engineering — Draft For Review", draft)
+            self.assertIn("Current phase: `requirements`", draft)
+
+            finalized = await advance_lifecycle_phase.run(
+                project_id=project_id,
+                workspace_root=tmp,
+                allow_workspace_write=True,
+                allow_diagrams=True,
+                llm=None,
+            )
+            self.assertIn("Requirements Engineering — Finalized", finalized)
+            self.assertIn("Current phase: `requirements`", finalized)
+            self.assertNotIn("Current phase: `modeling`", finalized)
+
+            modeling_interview = await advance_lifecycle_phase.run(
+                project_id=project_id,
+                workspace_root=tmp,
+                allow_workspace_write=True,
+                allow_diagrams=True,
+                llm=None,
+            )
+            self.assertIn("Requirements Modeling — Interview", modeling_interview)
+            self.assertIn("Current phase: `modeling`", modeling_interview)
+
     async def test_mermaid_diagram_is_saved_when_allowed(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             start = await start_product_build.run(
@@ -241,7 +284,15 @@ Must, should, could.
             await advance_lifecycle_phase.run(
                 project_id=project_id,
                 workspace_root=tmp,
-                user_response="Proceed to modeling.",
+                user_response="Requirements approved.",
+                allow_workspace_write=True,
+                allow_diagrams=True,
+                llm=None,
+            )
+            await advance_lifecycle_phase.run(
+                project_id=project_id,
+                workspace_root=tmp,
+                user_response="Model leads, contacts, opportunities, and pipeline stages.",
                 allow_workspace_write=True,
                 allow_diagrams=True,
                 llm=None,

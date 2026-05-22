@@ -13,7 +13,7 @@
       "//env_note": "Set SE_MCP_API_KEY and SE_MCP_MODEL for the LLM provider you want. The provider is inferred from the model/key. Replace placeholders locally; do not commit real keys.",
       "env": {
         "SE_MCP_API_KEY": "<YOUR_LLM_API_KEY>",
-        "SE_MCP_MODEL": "gemini-2.5-flash"
+        "SE_MCP_MODEL": "<YOUR_LLM_MODEL_NAME>"
       }
     }
   }
