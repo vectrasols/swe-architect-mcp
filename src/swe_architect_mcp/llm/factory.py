@@ -32,8 +32,10 @@ def create_provider(
 
     Resolution order:
         1. Explicit `provider_name` argument
-        2. `SWE_ARCHITECT_MCP_PROVIDER` environment variable
-        3. Auto-detect from available API keys (first found wins)
+        2. `SWE_ARCHITECT_MCP_PROVIDER` or `SE_MCP_PROVIDER`
+        3. Infer from `SWE_ARCHITECT_MCP_MODEL` or `SE_MCP_MODEL`
+        4. Infer from `SWE_ARCHITECT_MCP_API_KEY` or `SE_MCP_API_KEY`
+        5. Auto-detect from provider-specific API keys (first found wins)
 
     Args:
         provider_name: Explicit provider name ('anthropic', 'openai', 'google').
@@ -47,11 +49,22 @@ def create_provider(
         ValueError: If no provider can be determined or the provider name is unknown.
     """
     # Step 1: Resolve provider name
-    env_provider = os.environ.get("SWE_ARCHITECT_MCP_PROVIDER", "").strip().lower()
-    
+    env_provider = (
+        os.environ.get("SWE_ARCHITECT_MCP_PROVIDER", "").strip().lower()
+        or os.environ.get("SE_MCP_PROVIDER", "").strip().lower()
+    )
+    env_model = (
+        os.environ.get("SWE_ARCHITECT_MCP_MODEL", "").strip()
+        or os.environ.get("SE_MCP_MODEL", "").strip()
+    )
+    env_api_key = (
+        os.environ.get("SWE_ARCHITECT_MCP_API_KEY", "").strip()
+        or os.environ.get("SE_MCP_API_KEY", "").strip()
+    )
+
     # Try to infer provider from model name if explicit provider is not given
     inferred_from_model = None
-    model_to_check = (model or os.environ.get("SWE_ARCHITECT_MCP_MODEL", "")).strip().lower()
+    model_to_check = (model or env_model).strip().lower()
     if model_to_check:
         if "claude" in model_to_check:
             inferred_from_model = "anthropic"
@@ -60,9 +73,9 @@ def create_provider(
         elif "gemini" in model_to_check:
             inferred_from_model = "google"
 
-    # Try to infer provider from SWE_ARCHITECT_MCP_API_KEY if model didn't give a clue
+    # Try to infer provider from generic API key if model didn't give a clue.
     inferred_from_key = None
-    api_key_to_check = (api_key or os.environ.get("SWE_ARCHITECT_MCP_API_KEY", "")).strip()
+    api_key_to_check = (api_key or env_api_key).strip()
     if api_key_to_check and not inferred_from_model:
         if api_key_to_check.startswith("sk-ant"):
             inferred_from_key = "anthropic"
@@ -82,6 +95,7 @@ def create_provider(
     if not name:
         raise ValueError(
             "No LLM provider configured. Set one of the following environment variables:\n"
+            "  - SE_MCP_API_KEY with SE_MCP_MODEL (simple generic config)\n"
             "  - ANTHROPIC_API_KEY  (for Anthropic Claude)\n"
             "  - OPENAI_API_KEY    (for OpenAI GPT)\n"
             "  - GOOGLE_API_KEY    (for Google Gemini)\n"
@@ -111,8 +125,9 @@ def create_provider(
             f"Install with: pip install swe-architect-mcp[{name}]"
         ) from e
 
-    api_key_to_use = api_key or os.environ.get("SWE_ARCHITECT_MCP_API_KEY")
-    provider: LLMProvider = provider_class(model=model, api_key=api_key_to_use)
+    api_key_to_use = api_key or env_api_key or None
+    model_to_use = model or env_model or None
+    provider: LLMProvider = provider_class(model=model_to_use, api_key=api_key_to_use)
 
     # Log provider info to stderr; this does not interfere with MCP stdio.
     sys.stderr.write(

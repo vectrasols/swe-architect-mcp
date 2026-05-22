@@ -1,0 +1,20 @@
+{
+  "mcpServers": {
+    "swe-architect-mcp": {
+      "//description": "Portable template for running SWE Architect MCP as a local stdio MCP server.",
+      "//command_note": "Use the Python executable where this package is installed. Examples: 'python', 'python3', './.venv/bin/python', '/absolute/path/to/.venv/bin/python', or 'C:/path/to/.venv/Scripts/python.exe'.",
+      "command": "python",
+      "args": [
+        "-m",
+        "swe_architect_mcp"
+      ],
+      "//cwd_note": "Set cwd to the project you want lifecycle artifacts created in. Use '.' for the current workspace, or an absolute project path.",
+      "cwd": ".",
+      "//env_note": "Set SE_MCP_API_KEY and SE_MCP_MODEL for the LLM provider you want. The provider is inferred from the model/key. Replace placeholders locally; do not commit real keys.",
+      "env": {
+        "SE_MCP_API_KEY": "<YOUR_LLM_API_KEY>",
+        "SE_MCP_MODEL": "gemini-2.5-flash"
+      }
+    }
+  }
+}
