@@ -5,9 +5,11 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
+from swe_architect_mcp.diagram_renderer import get_renderer_mode
 from swe_architect_mcp.llm.base import LLMProvider
 from swe_architect_mcp.tools import (
     advance_lifecycle_phase,
@@ -54,6 +56,10 @@ class LifecycleToolTests(unittest.IsolatedAsyncioTestCase):
         self.assertNotIn("analyze_principles_tool", server_source)
         self.assertNotIn("detect_code_smells_tool", server_source)
         self.assertNotIn("check_solid_tool", server_source)
+
+    def test_diagram_renderer_accepts_short_env_name(self) -> None:
+        with patch.dict("os.environ", {"SE_MCP_DIAGRAM_RENDERER": "none"}, clear=True):
+            self.assertEqual(get_renderer_mode(), "none")
 
     async def test_start_product_build_creates_workspace_when_allowed(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

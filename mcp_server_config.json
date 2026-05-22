@@ -1,19 +1,20 @@
 {
   "mcpServers": {
     "swe-architect-mcp": {
-      "//description": "Portable template for running SWE Architect MCP as a local stdio MCP server.",
-      "//command_note": "Use the Python executable where this package is installed. Examples: 'python', 'python3', './.venv/bin/python', '/absolute/path/to/.venv/bin/python', or 'C:/path/to/.venv/Scripts/python.exe'.",
-      "command": "python",
+      "//description": "Cross-platform template for running SWE Architect MCP as a local stdio MCP server. Replace placeholders before use.",
+      "//command_note": "Use the Python executable where this package is installed. Windows examples: 'python' or 'C:\\path\\to\\swe-architect-mcp\\.venv\\Scripts\\python.exe'. macOS/Linux examples: 'python3', '/path/to/swe-architect-mcp/.venv/bin/python', or './.venv/bin/python'.",
+      "command": "<PYTHON_EXECUTABLE>",
       "args": [
         "-m",
         "swe_architect_mcp"
       ],
-      "//cwd_note": "Set cwd to the project you want lifecycle artifacts created in. Use '.' for the current workspace, or an absolute project path.",
-      "cwd": ".",
-      "//env_note": "Set SE_MCP_API_KEY and SE_MCP_MODEL for the LLM provider you want. The provider is inferred from the model/key. Replace placeholders locally; do not commit real keys.",
+      "//cwd_note": "Use an absolute path when possible. If running from source, set this to the swe-architect-mcp repo path. If the package is installed globally/in a venv, this can be the workspace where lifecycle artifacts should be created. On Windows, escape backslashes like 'C:\\Users\\you\\project' or use forward slashes.",
+      "cwd": "<ABSOLUTE_PATH_TO_REPO_OR_WORKSPACE>",
+      "//uv_note": "If you prefer uv, set command to 'uv' and args to ['run', '--directory', '<ABSOLUTE_PATH_TO_REPO>', 'python', '-m', 'swe_architect_mcp'].",
+      "//env_note": "Use either SE_MCP_API_KEY + SE_MCP_MODEL, or provider-specific keys such as ANTHROPIC_API_KEY, OPENAI_API_KEY, or GOOGLE_API_KEY. Do not commit real keys.",
       "env": {
         "SE_MCP_API_KEY": "<YOUR_LLM_API_KEY>",
-        "SE_MCP_MODEL": "<YOUR_LLM_MODEL_NAME>"
+        "SE_MCP_MODEL": "<MODEL_NAME_FOR_EXAMPLE_gemini-2.5-flash>"
       }
     }
   }

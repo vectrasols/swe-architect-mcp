@@ -4,7 +4,8 @@ This module provides zero-dependency diagram rendering by encoding Mermaid
 markup and sending it to the free mermaid.ink API, which returns SVG/PNG images.
 
 Configuration via environment variables:
-    SWE_ARCHITECT_MCP_DIAGRAM_RENDERER: "mermaid_ink" (default), or "none" to skip rendering
+    SWE_ARCHITECT_MCP_DIAGRAM_RENDERER or SE_MCP_DIAGRAM_RENDERER:
+    "mermaid_ink" (default), or "none" to skip rendering.
 """
 
 from __future__ import annotations
@@ -27,7 +28,12 @@ MAX_DIAGRAM_BYTES = 50_000  # mermaid.ink limit is ~64KB encoded
 
 def get_renderer_mode() -> str:
     """Return the configured renderer mode from environment."""
-    return os.getenv("SWE_ARCHITECT_MCP_DIAGRAM_RENDERER", "mermaid_ink").strip().lower()
+    mode = (
+        os.getenv("SWE_ARCHITECT_MCP_DIAGRAM_RENDERER", "").strip()
+        or os.getenv("SE_MCP_DIAGRAM_RENDERER", "").strip()
+        or "mermaid_ink"
+    )
+    return mode.lower()
 
 
 # ── Encoding ──────────────────────────────────────────────────────────────
