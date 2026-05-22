@@ -11,7 +11,7 @@ if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 
 from dotenv import load_dotenv
-from mcp.server.fastmcp import FastMCP
+from fastmcp import FastMCP
 
 from swe_architect_mcp.llm.factory import create_provider
 from swe_architect_mcp.tools import (
@@ -57,12 +57,25 @@ mcp = FastMCP(
     ),
 )
 
-try:
-    _provider = create_provider()
-except (ValueError, ImportError) as exc:
-    sys.stderr.write(f"SWE Architect MCP provider warning: {exc}\n")
-    sys.stderr.write("Server will start; tools will use deterministic fallbacks.\n")
-    _provider = None
+_provider = None
+_provider_checked = False
+
+
+def _get_provider():
+    """Create the provider lazily so hosted startup works without API keys."""
+    global _provider, _provider_checked
+
+    if _provider_checked:
+        return _provider
+
+    _provider_checked = True
+    try:
+        _provider = create_provider()
+    except (ValueError, ImportError) as exc:
+        sys.stderr.write(f"SWE Architect MCP provider warning: {exc}\n")
+        sys.stderr.write("Tools will use deterministic fallbacks.\n")
+        _provider = None
+    return _provider
 
 
 @mcp.tool()
@@ -100,7 +113,7 @@ async def start_product_build_tool(
         constraints=constraints,
         allow_workspace_write=allow_workspace_write,
         allow_diagrams=allow_diagrams,
-        llm=_provider,
+        llm=_get_provider(),
     )
 
 
@@ -133,7 +146,7 @@ async def advance_lifecycle_phase_tool(
         phase_override=phase_override,
         allow_workspace_write=allow_workspace_write,
         allow_diagrams=allow_diagrams,
-        llm=_provider,
+        llm=_get_provider(),
     )
 
 
@@ -168,7 +181,7 @@ async def review_lifecycle_gate_tool(
         changed_files=changed_files,
         strictness=strictness,
         allow_workspace_write=allow_workspace_write,
-        llm=_provider,
+        llm=_get_provider(),
     )
 
 
@@ -196,7 +209,7 @@ async def generate_lifecycle_diagram_tool(
         diagram_type=diagram_type,
         source_artifact=source_artifact,
         allow_workspace_write=allow_workspace_write,
-        llm=_provider,
+        llm=_get_provider(),
     )
 
 
